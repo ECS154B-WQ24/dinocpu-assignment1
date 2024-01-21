@@ -24,10 +24,6 @@ class SingleCycleCPU(implicit val conf: CPUConfig) extends BaseCPU {
   val jumpPcGen       = Module(new JumpPcGeneratorUnit())
   val (cycleCount, _) = Counter(true.B, 1 << 30)
 
-  control.io := DontCare
-  registers.io := DontCare
-  aluControl.io := DontCare
-  alu.io := DontCare
   immGen.io := DontCare
   jumpDetection.io := DontCare
   jumpPcGen.io := DontCare
@@ -45,6 +41,25 @@ class SingleCycleCPU(implicit val conf: CPUConfig) extends BaseCPU {
   }
 
   // Your code goes here
+  control.io.opcode := instruction(6, 0)
+
+  registers.io.readreg1 := instruction(19, 15)
+  registers.io.readreg2 := instruction(24, 20)
+  registers.io.writereg := instruction(11, 7)
+  registers.io.writedata := alu.io.result
+  registers.io.wen := (control.io.writeback_src =/= 0.U & registers.io.writereg =/= 0.U)
+
+  aluControl.io.aluop := control.io.aluop
+  aluControl.io.arth_type := control.io.arth_type
+  aluControl.io.int_length := control.io.int_length
+  aluControl.io.funct3 := instruction(14, 12)
+  aluControl.io.funct7 := instruction(31, 25)
+
+  alu.io.operation := aluControl.io.operation
+  alu.io.operand1 := registers.io.readdata1
+  alu.io.operand2 := registers.io.readdata2
+
+  pc := pc + 4.U
 
 }
 
